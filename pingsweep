@@ -1,0 +1,137 @@
+#!/usr/bin/python3
+
+# pingsweep
+
+# IP parsing: Breaks up string into 4 octets, splits the last octet to determine
+#   the range.
+
+# No input validation beyond that which is included with argparse; error messages
+#   should tell you what went wrong.
+
+# Use './pingsweep -h' for usage
+
+from time import sleep, time
+from os import system
+from random import randint, shuffle
+import argparse
+
+# Define argument parsing
+parser = argparse.ArgumentParser(
+    description='\
+        Simple multi-process Linux ping wrapper written in python. \
+            Used to perform a scan over a range of consecutive IP addresses on\
+                a single subnet prefix. Faster results than default "nmap -PE -sn"\
+                    and meant to be used as a quick way to scan for live hosts.\
+                        The default settings are for the fastest results and most\
+                            should not need to be altered save for evasion.'
+)
+parser.add_argument(
+    'target',
+    type=str,
+    help='The subnet IP range to target. Example: 192.168.1.1-255'
+)
+parser.add_argument(
+    '--throttle', '-t',
+    type=int, default=255,
+    help='Number of targets probed between delay. (higher=faster); default=255'
+)
+parser.add_argument(
+    '--delay', '-d',
+    type=int, default=1,
+    help='Time in seconds spent waiting during throttle cycle. (lower=faster); default=1'
+)
+parser.add_argument(
+    '--wait-time', '-w',
+    type=int, default=1,
+    help='Time in seconds to wait for a resposne from a given target. (lower=faster); default=1'
+)
+parser.add_argument(
+    '--num-packets', '-p',
+    type=int, default=1,
+    help='Number of probes sent to each target.'
+)
+parser.add_argument(
+    '--verbose', '-v',
+    action='store_true', default=False,
+    help='Increase output verbosity.'
+)
+parser.add_argument(
+    '--suppress', '-s',
+    action='store_true', default=False,
+    help='Suppress all text save for responsive hosts.'
+)
+parser.add_argument(
+    '--shuffle', '-S',
+    action='store_true', default=False,
+    help='Shuffle list of IP addresses before scanning.'
+)
+args = parser.parse_args()
+
+# Variables used for session path
+sid = randint(1000000, 9999999)
+tpath = ('/tmp/pingsweep.%i' % sid)
+
+# IP variables
+octets = args.target.split('.')
+prefix = '.'.join(octets[0:3])
+rng = str(octets[3]).split('-')
+
+# Initiates ping and performs output
+def ping_sweep(prefix, rng):
+    # Init <tpath> directory
+    system('mkdir %s' % (tpath))
+
+    # Generate list of ip addresses
+    ips = []
+    if len(rng) > 1:
+        s = int(rng[0])
+        e = int(rng[1]) + 1
+        for i in range(s, e):
+            ips.append('.'.join((prefix, str(i))))
+    else:
+        ips.append('.'.join((prefix, rng[0])))
+
+    # Shuffle IPs
+    if args.shuffle: shuffle(ips)
+
+    # Perform ping sweep
+    throttle_count = 0
+    for ip in ips:
+        # Execute ping command
+        system('ping -w %i -c %i %s >> %s/%s &' \
+            % (args.wait_time, args.num_packets, ip, tpath, ip))
+        throttle_count += 1
+        if throttle_count >= args.throttle:
+            sleep(args.delay)
+            throttle_count = 0
+    # Give the last packets time to return before continuing
+    # Testing shows additional time is required over wait_time;
+    #   2.5 seconds seems to be the sweet spot. 
+    sleep(args.wait_time+2.5)
+
+    # Read files in temp and output host state
+    for ip in ips:
+        file = open(tpath+'/'+ip)
+        c = file.read()
+        file.close()
+        for line in c.split('\n'):
+            if 'loss' in line:
+                if not '100' in line:
+                    if not args.suppress: print(ip+' is up')
+                    else: print(ip)
+                elif args.verbose: print(ip+' is down')
+
+    # Clean up temp files
+    system('rm -r %s 2> /dev/null' % tpath)
+
+def main():
+    if args.verbose:
+        print(str(args))
+        print('SessionID: %i' % sid)
+        print('Peforming ping sweep on %s\n' % args.target)
+    start_time = time()
+    ping_sweep(prefix, rng)
+    if not args.suppress: print('\nTime taken: %f seconds' % (time() - start_time))
+
+if __name__=='__main__':
+    main()
