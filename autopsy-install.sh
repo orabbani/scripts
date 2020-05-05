@@ -29,5 +29,5 @@ sudo apt install ./sleuthkit-java_4.8.0-1_amd64.deb -y && rm sleuthkit-java_4.8.
 ## Install Autopsy
 cd autopsy-4.14.0
 sh unix_setup.sh
-echo "bash -c 'cd /home/kali/.autopsy_base/autopsy-4.14.0/bin; nohup sh ./autopsy &'" | sudo tee /usr/bin/autopsy
+echo "bash -c 'cd ~/.autopsy_base/autopsy-4.14.0/bin; nohup sh ./autopsy &'" | sudo tee /usr/bin/autopsy
 sudo chmod +x /usr/bin/autopsy
