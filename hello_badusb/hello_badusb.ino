@@ -1,25 +1,23 @@
-// Example of using Lily GO USB Microcontroller ATMEGA32U4 as a BadUSB
+// Example of using Lily GO USB Microcontroller ATMEGA32U4 as a BadUSB to deliver a payload via PowerShell
 //
 // Purchase Link: https://www.aliexpress.com/item/4000613433474.html
 //
 // Board: Arduino Leonardo
 //
-// Mouse Reference: https://www.arduino.cc/reference/en/language/functions/usb/mouse/
 // Keyboard Reference: https://www.arduino.cc/reference/en/language/functions/usb/keyboard/
 // Keyboard Modifiers: https://www.arduino.cc/reference/en/language/functions/usb/keyboard/keyboardmodifiers/
-//
-// Differences between Keyboard.write(), Keyboard.print(), Keyboard.println() and Keyboard.press():
-//  Keyboard.write()    Print a single character
-//  Keyboard.print()    Print a string of characters
-//  Keyboard.println()  Print a string of characters followed by a newline and carriage return
-//  Keyboard.press()    Hold a key until Keyboard.release() or Keyboard.releaseAll() is called--useful for multi-key commands
+// Mouse Reference: https://www.arduino.cc/reference/en/language/functions/usb/mouse/
 
 #include <Keyboard.h>
+#include <Mouse.h>
 
-// These values are for a fairly responsive PC
-// They need to be increased if used against a slower machine
+// Define long and short delay values. The values dlong/500 and dshort/50 are for a fairly
+// responsive pc and should be increased if used against a slower machine.
 const int dlong = 500;
 const int dshort = 50;
+
+// This is the payload PowerShell will execute
+const char[] payload = "Set-Content -Path \"C:\\hello.txt\" -Value \"hello, world!\" -Force"
 
 void setup() {
   Keyboard.begin();
@@ -44,7 +42,7 @@ void setup() {
   delay(dlong);
 
   // Deliver payload
-  Keyboard.println("Set-Content -Path \"C:\\hello.txt\" -Value \"hello, world!\" -Force"); 
+  Keyboard.println(payload); 
   delay(dshort);
 
   // Close PowerShell
